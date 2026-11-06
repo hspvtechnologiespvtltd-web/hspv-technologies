@@ -118,39 +118,49 @@ const handleSubmit = async (e) => {
     button.textContent = "Sending...";
 
     const response = await fetch("/api/contact", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(data)
-    });
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify(data)
+});
 
-    const result = await response.json();
+// Read actual server response
+const responseText = await response.text();
 
-    if (!response.ok) {
-      throw new Error(
-        result.message || "Unable to send your enquiry."
-      );
-    }
+console.log("HTTP STATUS:", response.status);
+console.log("SERVER RESPONSE:", responseText);
 
-    alert(
-      "Thank you for contacting HSPV Technologies Pvt. Ltd.! Your enquiry has been successfully sent. A confirmation email has been sent to your email address."
-    );
+let result;
 
-    form.reset();
+try {
+  result = JSON.parse(responseText);
+} catch (parseError) {
+  throw new Error(
+    "Server response is not JSON: " + responseText.substring(0, 300)
+  );
+}
 
-  } catch (error) {
-    console.error("Contact Form Error:", error);
+if (!response.ok || !result.success) {
+  throw new Error(
+    result.message || "Unable to send your enquiry."
+  );
+}
 
-    alert(
-      error.message || "Something went wrong. Please try again later."
-    );
+alert(
+  "Thank you for contacting HSPV Technologies! Your enquiry has been sent successfully."
+);
 
-  } finally {
-    button.disabled = false;
-    button.innerHTML = 'Send Message <span>→</span>';
-  }
-};
+form.reset();
+
+} catch (error) {
+  console.error("Contact Form Error:", error);
+  alert(error.message || "Something went wrong.");
+} finally {
+  button.disabled = false;
+  button.innerHTML = 'Send Message <span>→</span>';
+}
+}
 
 
   if (window.location.pathname === "/careers") {
