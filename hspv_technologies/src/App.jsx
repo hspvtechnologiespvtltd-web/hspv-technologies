@@ -1,7 +1,9 @@
 
 import React, { useState } from "react";
+import Careers from "./Careers";
 import PrivacyPolicy from "./PrivacyPolicy";
 import TermsOfService from "./TermsOfService";
+
 import "./App.css";
 
 const services = [
@@ -103,6 +105,10 @@ function App() {
     e.target.reset();
   };
 
+  if (window.location.pathname === "/careers") {
+  return <Careers />;
+}
+
   if (window.location.pathname === "/privacy-policy") {
     return <PrivacyPolicy />;
   }
@@ -139,6 +145,7 @@ function App() {
           <a href="#services" onClick={closeMenu}>Services</a>
           <a href="#why-us" onClick={closeMenu}>Why Choose Us</a>
           <a href="#contact" onClick={closeMenu}>Contact</a>
+          <a href="/careers">Careers</a>
         </nav>
 
         <a href="#contact" className="nav-btn">
