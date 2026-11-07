@@ -58,9 +58,15 @@ export default async function handler(req, res) {
 
     // Validate required fields
     if (
-      !name || !email || !mobile || !position ||
-      !qualification || !experience || !location ||
-      !resume || consent !== "true"
+      !name ||
+      !email ||
+      !mobile ||
+      !position ||
+      !qualification ||
+      !experience ||
+      !location ||
+      !resume ||
+      consent !== "true"
     ) {
       return res.status(400).json({
         success: false,
@@ -68,6 +74,7 @@ export default async function handler(req, res) {
       });
     }
 
+    // Validate application details
     if (
       name.length > 100 ||
       email.length > 254 ||
@@ -92,7 +99,9 @@ export default async function handler(req, res) {
       "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     ];
 
-    const extension = path.extname(resume.originalFilename || "").toLowerCase();
+    const extension = path.extname(
+      resume.originalFilename || ""
+    ).toLowerCase();
 
     if (
       !allowedTypes.includes(resume.mimetype) ||
@@ -104,13 +113,14 @@ export default async function handler(req, res) {
       });
     }
 
-    // Check Hostinger SMTP configuration
+    // Check SMTP configuration
+    // JOB_RECEIVER_EMAIL is separate from the old website's RECEIVER_EMAIL
     const requiredEnv = [
       "SMTP_HOST",
       "SMTP_PORT",
       "SMTP_USER",
       "SMTP_PASS",
-      "RECEIVER_EMAIL"
+      "JOB_RECEIVER_EMAIL"
     ];
 
     const missing = requiredEnv.filter(
@@ -135,6 +145,7 @@ export default async function handler(req, res) {
       });
     }
 
+    // Create SMTP transporter
     const transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST,
       port,
@@ -160,9 +171,10 @@ export default async function handler(req, res) {
     // Send application to HR
     await transporter.sendMail({
       from: `"HSPV Careers" <${process.env.SMTP_USER}>`,
-      to: process.env.RECEIVER_EMAIL,
+      to: process.env.JOB_RECEIVER_EMAIL,
       replyTo: email,
       subject: `New Job Application - ${position}`,
+
       text: `
 NEW JOB APPLICATION
 HSPV Technologies Pvt. Ltd.
@@ -180,6 +192,7 @@ ${message || "Not provided"}
 
 Resume is attached to this email.
       `,
+
       html: `
         <div style="font-family:Arial,sans-serif;color:#333;line-height:1.7">
           <h2>New Job Application</h2>
@@ -196,8 +209,11 @@ Resume is attached to this email.
           <p>HSPV Technologies Pvt. Ltd.</p>
         </div>
       `,
+
       attachments: [{
-        filename: path.basename(resume.originalFilename || "resume"),
+        filename: path.basename(
+          resume.originalFilename || "resume"
+        ),
         path: resume.filepath,
         contentType: resume.mimetype
       }]
@@ -209,6 +225,7 @@ Resume is attached to this email.
         from: `"HSPV Technologies" <${process.env.SMTP_USER}>`,
         to: email,
         subject: "Your Job Application Has Been Received",
+
         text: `
 Dear ${name},
 
@@ -222,6 +239,7 @@ Best Regards,
 HR Team
 HSPV Technologies Pvt. Ltd.
         `,
+
         html: `
           <div style="font-family:Arial,sans-serif;color:#333;line-height:1.7">
             <h2>Application Received Successfully!</h2>
@@ -229,12 +247,20 @@ HSPV Technologies Pvt. Ltd.
             <p>Thank you for applying to HSPV Technologies Pvt. Ltd.</p>
             <p>Your application for <b>${safe.position}</b> has been received.</p>
             <p>Our HR team will review your profile and contact you if shortlisted.</p>
-            <p>Best Regards,<br><b>HR Team</b><br>HSPV Technologies Pvt. Ltd.</p>
+            <p>
+              Best Regards,<br>
+              <b>HR Team</b><br>
+              HSPV Technologies Pvt. Ltd.
+            </p>
           </div>
         `
       });
+
     } catch (confirmationError) {
-      console.error("Applicant confirmation failed:", confirmationError);
+      console.error(
+        "Applicant confirmation failed:",
+        confirmationError
+      );
     }
 
     return res.status(200).json({
