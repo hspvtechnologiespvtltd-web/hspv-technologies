@@ -645,6 +645,8 @@ form.reset();
         <div className="director-marquee">
           <div className="director-details">
             <span><i className="fas fa-building"></i> HSPV Technologies Pvt. Ltd.</span>
+            <span><i className="#"></i>CIN: U62013MH2026PTC477348  </span>
+            <span><i className="#"></i>ROC Mumbai   </span>
             <span><i className="fas fa-phone"></i> +91 9304094715</span>
             <span><i className="fas fa-location-dot"></i> Mayur Nagar, Royal Palms, Goregaon East, Mumbai, Maharastra 400065</span>
           </div>
