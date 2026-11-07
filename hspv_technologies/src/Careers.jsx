@@ -1,67 +1,111 @@
+
 import React, { useRef, useState } from "react";
-import emailjs from "@emailjs/browser";
 import "./Careers.css";
 
-const EMAILJS_SERVICE_ID = "YOUR_SERVICE_ID";
-const EMAILJS_TEMPLATE_ID = "YOUR_TEMPLATE_ID";
-const EMAILJS_PUBLIC_KEY = "YOUR_PUBLIC_KEY";
+function Careers() {
+  const formRef = useRef(null);
 
+  const [loading, setLoading] = useState(false);
+  const [selectedFile, setSelectedFile] = useState("");
+  const [status, setStatus] = useState({
+    type: "",
+    message: ""
+  });
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
+  // Resume validation
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0];
 
-  if (!formRef.current) return;
-
-  setLoading(true);
-  setStatus({ type: "", message: "" });
-
-  try {
-    const formData = new FormData(formRef.current);
-
-    // Consent checkbox validation
-    formData.set(
-      "consent",
-      formData.get("consent") ? "true" : "false"
-    );
-
-    // Send application to Vercel backend API
-    const response = await fetch("/api/careers", {
-      method: "POST",
-      body: formData,
-    });
-
-    const result = await response.json();
-
-    if (!response.ok) {
-      throw new Error(
-        result.message || "Application submission failed."
-      );
+    if (!file) {
+      setSelectedFile("");
+      return;
     }
 
-    setStatus({
-      type: "success",
-      message:
-        "Your application has been submitted successfully! Our HR team will contact you soon.",
-    });
+    const allowedExtensions = [".pdf", ".doc", ".docx"];
+    const extension = file.name
+      .substring(file.name.lastIndexOf("."))
+      .toLowerCase();
 
-    // Reset form after successful submission
-    formRef.current.reset();
-    setSelectedFile("");
+    if (!allowedExtensions.includes(extension)) {
+      setStatus({
+        type: "error",
+        message: "Only PDF, DOC and DOCX resumes are allowed."
+      });
+      e.target.value = "";
+      setSelectedFile("");
+      return;
+    }
 
-  } catch (error) {
-    console.error("Application submission failed:", error);
+    if (file.size > 4 * 1024 * 1024) {
+      setStatus({
+        type: "error",
+        message: "Resume size must not exceed 4 MB."
+      });
+      e.target.value = "";
+      setSelectedFile("");
+      return;
+    }
 
-    setStatus({
-      type: "error",
-      message:
-        error.message ||
-        "Something went wrong. Please try again or contact HR at hr@hspvtechnologies.com.",
-    });
+    setStatus({ type: "", message: "" });
+    setSelectedFile(file.name);
+  };
 
-  } finally {
-    setLoading(false);
-  }
-};
+  // Submit application using Nodemailer backend
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!formRef.current) return;
+
+    setLoading(true);
+    setStatus({ type: "", message: "" });
+
+    try {
+      const formData = new FormData(formRef.current);
+
+      // Consent validation
+      formData.set(
+        "consent",
+        formData.get("consent") ? "true" : "false"
+      );
+
+      // Send application to Vercel API
+      const response = await fetch("/api/careers", {
+        method: "POST",
+        body: formData
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          result.message || "Application submission failed."
+        );
+      }
+
+      setStatus({
+        type: "success",
+        message:
+          "Your application has been submitted successfully! Our HR team will contact you soon."
+      });
+
+      // Reset form
+      formRef.current.reset();
+      setSelectedFile("");
+
+    } catch (error) {
+      console.error("Application submission failed:", error);
+
+      setStatus({
+        type: "error",
+        message:
+          error.message ||
+          "Something went wrong. Please try again or contact HR at hr@hspvtechnologies.com."
+      });
+
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="careers-page">
@@ -102,6 +146,7 @@ const handleSubmit = async (e) => {
         <div className="careers-container">
           <div className="careers-intro-heading">
             <span>JOIN OUR TEAM</span>
+
             <h2>
               Grow Your Career With <span>Us</span>
             </h2>
@@ -236,6 +281,7 @@ const handleSubmit = async (e) => {
                 Please provide accurate information.
               </p>
 
+              {/* SUCCESS / ERROR MESSAGE */}
               {status.message && (
                 <div
                   className={`careers-status ${status.type}`}
@@ -254,11 +300,12 @@ const handleSubmit = async (e) => {
 
                 <div className="careers-form-grid">
 
+                  {/* FULL NAME */}
                   <div className="careers-field">
                     <label>Full Name *</label>
                     <input
                       type="text"
-                      name="full_name"
+                      name="fullName"
                       placeholder="Enter your full name"
                       required
                       minLength="2"
@@ -266,6 +313,7 @@ const handleSubmit = async (e) => {
                     />
                   </div>
 
+                  {/* EMAIL */}
                   <div className="careers-field">
                     <label>Email Address *</label>
                     <input
@@ -273,39 +321,64 @@ const handleSubmit = async (e) => {
                       name="email"
                       placeholder="example@gmail.com"
                       required
-                      maxLength="150"
+                      maxLength="254"
                     />
                   </div>
 
+                  {/* MOBILE */}
                   <div className="careers-field">
                     <label>Mobile Number *</label>
                     <input
                       type="tel"
-                      name="phone"
+                      name="mobileNumber"
                       placeholder="Enter mobile number"
-                      pattern="[+]?[0-9\s-]{10,16}"
+                      pattern="[+]?[0-9\s-]{10,20}"
                       required
                     />
                   </div>
 
+                  {/* POSITION */}
                   <div className="careers-field">
                     <label>Applying For *</label>
-                    <select name="position" required defaultValue="">
+                    <select
+                      name="applyingFor"
+                      required
+                      defaultValue=""
+                    >
                       <option value="" disabled>
                         Select Position
                       </option>
-                      <option value="Web Developer">Web Developer</option>
-                      <option value="React Developer">React Developer</option>
-                      <option value="Software Developer">Software Developer</option>
-                      <option value="App Developer">App Developer</option>
-                      <option value="UI/UX Designer">UI/UX Designer</option>
-                      <option value="Digital Marketing">Digital Marketing</option>
-                      <option value="Business Development">Business Development</option>
-                      <option value="HR Executive">HR Executive</option>
-                      <option value="Other">Other</option>
+                      <option value="Web Developer">
+                        Web Developer
+                      </option>
+                      <option value="React Developer">
+                        React Developer
+                      </option>
+                      <option value="Software Developer">
+                        Software Developer
+                      </option>
+                      <option value="App Developer">
+                        App Developer
+                      </option>
+                      <option value="UI/UX Designer">
+                        UI/UX Designer
+                      </option>
+                      <option value="Digital Marketing">
+                        Digital Marketing
+                      </option>
+                      <option value="Business Development">
+                        Business Development
+                      </option>
+                      <option value="HR Executive">
+                        HR Executive
+                      </option>
+                      <option value="Other">
+                        Other
+                      </option>
                     </select>
                   </div>
 
+                  {/* QUALIFICATION */}
                   <div className="careers-field">
                     <label>Qualification *</label>
                     <select
@@ -320,15 +393,18 @@ const handleSubmit = async (e) => {
                       <option value="12th">12th</option>
                       <option value="Diploma">Diploma</option>
                       <option value="Graduate">Graduate</option>
-                      <option value="Post Graduate">Post Graduate</option>
+                      <option value="Post Graduate">
+                        Post Graduate
+                      </option>
                       <option value="Other">Other</option>
                     </select>
                   </div>
 
+                  {/* EXPERIENCE */}
                   <div className="careers-field">
                     <label>Work Experience *</label>
                     <select
-                      name="experience"
+                      name="workExperience"
                       required
                       defaultValue=""
                     >
@@ -343,31 +419,33 @@ const handleSubmit = async (e) => {
                     </select>
                   </div>
 
+                  {/* LOCATION */}
                   <div className="careers-field full-width">
                     <label>Current Location *</label>
                     <input
                       type="text"
-                      name="location"
+                      name="currentLocation"
                       placeholder="Enter your city and state"
                       required
-                      maxLength="100"
+                      maxLength="150"
                     />
                   </div>
 
+                  {/* RESUME */}
                   <div className="careers-field full-width">
                     <label>Upload Resume *</label>
 
                     <div className="careers-file-upload">
                       <input
                         type="file"
-                        name="resume_file"
-                        id="resume_file"
+                        name="resume"
+                        id="resume"
                         accept=".pdf,.doc,.docx"
                         onChange={handleFileChange}
                         required
                       />
 
-                      <label htmlFor="resume_file">
+                      <label htmlFor="resume">
                         <span className="upload-icon">📎</span>
 
                         <span>
@@ -377,29 +455,31 @@ const handleSubmit = async (e) => {
                         </span>
 
                         <small>
-                          PDF, DOC, DOCX (Maximum 5 MB)
+                          PDF, DOC, DOCX (Maximum 4 MB)
                         </small>
                       </label>
                     </div>
                   </div>
 
+                  {/* COVER LETTER */}
                   <div className="careers-field full-width">
                     <label>Cover Letter / Message</label>
 
                     <textarea
-                      name="message"
+                      name="coverLetter"
                       rows="5"
                       placeholder="Tell us about yourself, your skills and why you want to join HSPV Technologies..."
-                      maxLength="3000"
+                      maxLength="5000"
                     ></textarea>
                   </div>
 
+                  {/* CONSENT */}
                   <div className="careers-field full-width">
                     <label className="careers-consent">
                       <input
                         type="checkbox"
                         name="consent"
-                        value="Yes"
+                        value="true"
                         required
                       />
 
@@ -413,6 +493,7 @@ const handleSubmit = async (e) => {
 
                 </div>
 
+                {/* SUBMIT BUTTON */}
                 <button
                   type="submit"
                   className="careers-submit-btn"
@@ -451,6 +532,6 @@ const handleSubmit = async (e) => {
 
     </div>
   );
-
+}
 
 export default Careers;
