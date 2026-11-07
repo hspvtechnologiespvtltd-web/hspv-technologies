@@ -6,104 +6,62 @@ const EMAILJS_SERVICE_ID = "YOUR_SERVICE_ID";
 const EMAILJS_TEMPLATE_ID = "YOUR_TEMPLATE_ID";
 const EMAILJS_PUBLIC_KEY = "YOUR_PUBLIC_KEY";
 
-function Careers() {
-  const formRef = useRef(null);
 
-  const [loading, setLoading] = useState(false);
-  const [selectedFile, setSelectedFile] = useState("");
-  const [status, setStatus] = useState({
-    type: "",
-    message: "",
-  });
+const handleSubmit = async (e) => {
+  e.preventDefault();
 
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
+  if (!formRef.current) return;
 
-    if (!file) {
-      setSelectedFile("");
-      return;
-    }
+  setLoading(true);
+  setStatus({ type: "", message: "" });
 
-    const allowedTypes = [
-      "application/pdf",
-      "application/msword",
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-    ];
+  try {
+    const formData = new FormData(formRef.current);
 
-    if (!allowedTypes.includes(file.type)) {
-      setStatus({
-        type: "error",
-        message: "Please upload PDF, DOC or DOCX file only.",
-      });
-      e.target.value = "";
-      setSelectedFile("");
-      return;
-    }
+    // Consent checkbox validation
+    formData.set(
+      "consent",
+      formData.get("consent") ? "true" : "false"
+    );
 
-    if (file.size > 5 * 1024 * 1024) {
-      setStatus({
-        type: "error",
-        message: "Resume size must be less than 5 MB.",
-      });
-      e.target.value = "";
-      setSelectedFile("");
-      return;
-    }
+    // Send application to Vercel backend API
+    const response = await fetch("/api/careers", {
+      method: "POST",
+      body: formData,
+    });
 
-    setStatus({ type: "", message: "" });
-    setSelectedFile(file.name);
-  };
+    const result = await response.json();
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    if (
-      EMAILJS_SERVICE_ID === "YOUR_SERVICE_ID" ||
-      EMAILJS_TEMPLATE_ID === "YOUR_TEMPLATE_ID" ||
-      EMAILJS_PUBLIC_KEY === "YOUR_PUBLIC_KEY"
-    ) {
-      setStatus({
-        type: "error",
-        message: "EmailJS configuration is incomplete. Please configure your EmailJS credentials.",
-      });
-      return;
-    }
-
-    setLoading(true);
-    setStatus({ type: "", message: "" });
-
-    try {
-      await emailjs.sendForm(
-        EMAILJS_SERVICE_ID,
-        EMAILJS_TEMPLATE_ID,
-        formRef.current,
-        {
-          publicKey: EMAILJS_PUBLIC_KEY,
-        }
+    if (!response.ok) {
+      throw new Error(
+        result.message || "Application submission failed."
       );
-
-      setStatus({
-        type: "success",
-        message:
-          "Your application has been submitted successfully! Our HR team will contact you soon.",
-      });
-
-      formRef.current.reset();
-      setSelectedFile("");
-
-    } catch (error) {
-      console.error("Application submission failed:", error);
-
-      setStatus({
-        type: "error",
-        message:
-          "Something went wrong. Please try again or contact HR at hr@hspvtechnologies.com.",
-      });
-
-    } finally {
-      setLoading(false);
     }
-  };
+
+    setStatus({
+      type: "success",
+      message:
+        "Your application has been submitted successfully! Our HR team will contact you soon.",
+    });
+
+    // Reset form after successful submission
+    formRef.current.reset();
+    setSelectedFile("");
+
+  } catch (error) {
+    console.error("Application submission failed:", error);
+
+    setStatus({
+      type: "error",
+      message:
+        error.message ||
+        "Something went wrong. Please try again or contact HR at hr@hspvtechnologies.com.",
+    });
+
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <div className="careers-page">
